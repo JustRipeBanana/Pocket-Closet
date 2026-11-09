@@ -1,0 +1,1782 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Pocket Closet</title>
+  
+  <!-- PWA & Mobile Meta Tags -->
+  <meta name="theme-color" content="#18181b" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'media',
+      theme: {
+        extend: {
+          colors: {
+            brand: { 50: '#fdf4ff', 100: '#fae8ff', 500: '#d946ef', 600: '#c026d3', 700: '#a21caf' }
+          },
+          spacing: {
+            'safe-top': 'env(safe-area-inset-top, 0px)',
+            'safe-bottom': 'env(safe-area-inset-bottom, 0px)'
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    body {
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+    .pb-safe {
+      padding-bottom: calc(4.75rem + env(safe-area-inset-bottom, 16px));
+    }
+    .pt-safe {
+      padding-top: calc(1rem + env(safe-area-inset-top, 0px));
+    }
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    .touch-pan-y {
+      touch-action: pan-y;
+    }
+  </style>
+</head>
+<body class="bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 min-h-screen flex flex-col font-sans antialiased select-none">
+
+  <!-- Top App Header -->
+  <header class="sticky top-0 z-20 bg-zinc-50/90 dark:bg-zinc-950/90 backdrop-blur-md border-b border-zinc-200/80 dark:border-zinc-800/80 px-4 pt-safe pb-3">
+    <div class="flex items-center justify-between max-w-lg mx-auto">
+      <div class="flex items-center gap-2.5">
+        <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-brand-600 to-indigo-600 flex items-center justify-center text-white shadow-sm shadow-brand-500/25">
+          <i data-lucide="layers" class="w-4 h-4"></i>
+        </div>
+        <div>
+          <h1 class="text-lg font-bold tracking-tight leading-none">Pocket Closet</h1>
+          <p class="text-[10px] text-zinc-400 font-medium">Rotation & Weighted Freshness</p>
+        </div>
+      </div>
+      <button onclick="openAddItemModal()" class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 text-xs font-semibold shadow-sm active:scale-95 transition-transform">
+        <i data-lucide="camera" class="w-3.5 h-3.5"></i>
+        <span>Add Piece</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main View Container -->
+  <main class="flex-1 max-w-lg w-full mx-auto pb-safe px-4 pt-4 relative touch-pan-y">
+
+    <!-- VIEW 1: CLOSET -->
+    <section id="view-closet" class="space-y-4">
+      <!-- Category Filter Pills -->
+      <div class="flex items-center gap-2 overflow-x-auto no-scrollbar py-1 text-xs font-semibold">
+        <button onclick="setClosetFilter('All')" class="category-pill active px-3.5 py-1.5 rounded-full whitespace-nowrap bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 transition-all">All</button>
+        <button onclick="setClosetFilter('Tops')" class="category-pill px-3.5 py-1.5 rounded-full whitespace-nowrap bg-zinc-200/80 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 transition-all">Tops / Shirts</button>
+        <button onclick="setClosetFilter('Quarterzips')" class="category-pill px-3.5 py-1.5 rounded-full whitespace-nowrap bg-zinc-200/80 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 transition-all">Quarter-zips & Sweaters</button>
+        <button onclick="setClosetFilter('Outerwear')" class="category-pill px-3.5 py-1.5 rounded-full whitespace-nowrap bg-zinc-200/80 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 transition-all">Jackets & Outerwear</button>
+        <button onclick="setClosetFilter('Bottoms')" class="category-pill px-3.5 py-1.5 rounded-full whitespace-nowrap bg-zinc-200/80 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 transition-all">Pants & Bottoms</button>
+        <button onclick="setClosetFilter('Shoes')" class="category-pill px-3.5 py-1.5 rounded-full whitespace-nowrap bg-zinc-200/80 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 transition-all">Shoes</button>
+        <button onclick="setClosetFilter('Accessories')" class="category-pill px-3.5 py-1.5 rounded-full whitespace-nowrap bg-zinc-200/80 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 transition-all">Accessories</button>
+      </div>
+
+      <!-- Item Visual Grid -->
+      <div id="closet-grid" class="grid grid-cols-2 gap-3 min-h-[300px]">
+        <!-- Dynamically rendered items -->
+      </div>
+    </section>
+
+    <!-- VIEW 2: OUTFITS -->
+    <section id="view-outfits" class="hidden space-y-4">
+      <!-- Sub-tab switcher -->
+      <div class="flex p-1 bg-zinc-200/80 dark:bg-zinc-900 rounded-xl">
+        <button id="subtab-canvas-btn" onclick="setOutfitSubTab('canvas')" class="flex-1 py-1.5 text-xs font-semibold rounded-lg bg-white dark:bg-zinc-800 shadow-sm transition-all">Mixer Canvas</button>
+        <button id="subtab-looks-btn" onclick="setOutfitSubTab('looks')" class="flex-1 py-1.5 text-xs font-medium rounded-lg text-zinc-600 dark:text-zinc-400 transition-all">Saved Looks</button>
+      </div>
+
+      <!-- Subtab 1: Canvas Mixer -->
+      <div id="subtab-canvas" class="space-y-4">
+        <div class="bg-white dark:bg-zinc-900/60 rounded-2xl p-4 border border-zinc-200/80 dark:border-zinc-800/80 space-y-3 shadow-sm">
+          <div class="flex items-center justify-between">
+            <span class="text-xs uppercase tracking-wider font-bold text-zinc-400">Layering Stack</span>
+            <button onclick="clearCanvas()" class="text-xs text-rose-500 font-semibold hover:underline">Clear All</button>
+          </div>
+
+          <!-- Stacking Shelves -->
+          <div class="space-y-2">
+            <!-- Outerwear Slot -->
+            <div onclick="selectSlotForCanvas('Outerwear')" class="border border-dashed border-zinc-300 dark:border-zinc-700 rounded-xl p-2.5 flex items-center gap-3 bg-zinc-50 dark:bg-zinc-900/40 cursor-pointer active:bg-zinc-100">
+              <div id="canvas-slot-Outerwear-img" class="w-12 h-12 rounded-lg bg-zinc-200 dark:bg-zinc-800 flex items-center justify-center overflow-hidden shrink-0">
+                <i data-lucide="shield" class="w-5 h-5 text-zinc-400"></i>
+              </div>
+              <div class="flex-1">
+                <div class="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Jacket / Outerwear (Reusable)</div>
+                <div id="canvas-slot-Outerwear-name" class="text-sm font-medium text-zinc-800 dark:text-zinc-200">Tap to select piece</div>
+              </div>
+            </div>
+
+            <!-- Quarterzip / Layer Slot -->
+            <div onclick="selectSlotForCanvas('Quarterzips')" class="border border-dashed border-zinc-300 dark:border-zinc-700 rounded-xl p-2.5 flex items-center gap-3 bg-zinc-50 dark:bg-zinc-900/40 cursor-pointer active:bg-zinc-100">
+              <div id="canvas-slot-Quarterzips-img" class="w-12 h-12 rounded-lg bg-zinc-200 dark:bg-zinc-800 flex items-center justify-center overflow-hidden shrink-0">
+                <i data-lucide="tag" class="w-5 h-5 text-zinc-400"></i>
+              </div>
+              <div class="flex-1">
+                <div class="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Quarter-zip / Sweater</div>
+                <div id="canvas-slot-Quarterzips-name" class="text-sm font-medium text-zinc-800 dark:text-zinc-200">Tap to select piece</div>
+              </div>
+            </div>
+
+            <!-- Top Slot -->
+            <div onclick="selectSlotForCanvas('Tops')" class="border border-dashed border-zinc-300 dark:border-zinc-700 rounded-xl p-2.5 flex items-center gap-3 bg-zinc-50 dark:bg-zinc-900/40 cursor-pointer active:bg-zinc-100">
+              <div id="canvas-slot-Tops-img" class="w-12 h-12 rounded-lg bg-zinc-200 dark:bg-zinc-800 flex items-center justify-center overflow-hidden shrink-0">
+                <i data-lucide="shirt" class="w-5 h-5 text-zinc-400"></i>
+              </div>
+              <div class="flex-1">
+                <div class="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Top / Shirt (Freshness Priority)</div>
+                <div id="canvas-slot-Tops-name" class="text-sm font-medium text-zinc-800 dark:text-zinc-200">Tap to select piece</div>
+              </div>
+            </div>
+
+            <!-- Bottoms Slot -->
+            <div onclick="selectSlotForCanvas('Bottoms')" class="border border-dashed border-zinc-300 dark:border-zinc-700 rounded-xl p-2.5 flex items-center gap-3 bg-zinc-50 dark:bg-zinc-900/40 cursor-pointer active:bg-zinc-100">
+              <div id="canvas-slot-Bottoms-img" class="w-12 h-12 rounded-lg bg-zinc-200 dark:bg-zinc-800 flex items-center justify-center overflow-hidden shrink-0">
+                <i data-lucide="scissors" class="w-5 h-5 text-zinc-400"></i>
+              </div>
+              <div class="flex-1">
+                <div class="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Pants / Bottoms (Multi-day Wear)</div>
+                <div id="canvas-slot-Bottoms-name" class="text-sm font-medium text-zinc-800 dark:text-zinc-200">Tap to select piece</div>
+              </div>
+            </div>
+
+            <!-- Shoes Slot -->
+            <div onclick="selectSlotForCanvas('Shoes')" class="border border-dashed border-zinc-300 dark:border-zinc-700 rounded-xl p-2.5 flex items-center gap-3 bg-zinc-50 dark:bg-zinc-900/40 cursor-pointer active:bg-zinc-100">
+              <div id="canvas-slot-Shoes-img" class="w-12 h-12 rounded-lg bg-zinc-200 dark:bg-zinc-800 flex items-center justify-center overflow-hidden shrink-0">
+                <i data-lucide="footprints" class="w-5 h-5 text-zinc-400"></i>
+              </div>
+              <div class="flex-1">
+                <div class="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Shoes</div>
+                <div id="canvas-slot-Shoes-name" class="text-sm font-medium text-zinc-800 dark:text-zinc-200">Tap to select piece</div>
+              </div>
+            </div>
+
+            <!-- Accessories Slot -->
+            <div onclick="selectSlotForCanvas('Accessories')" class="border border-dashed border-zinc-300 dark:border-zinc-700 rounded-xl p-2.5 flex items-center gap-3 bg-zinc-50 dark:bg-zinc-900/40 cursor-pointer active:bg-zinc-100">
+              <div id="canvas-slot-Accessories-img" class="w-12 h-12 rounded-lg bg-zinc-200 dark:bg-zinc-800 flex items-center justify-center overflow-hidden shrink-0">
+                <i data-lucide="watch" class="w-5 h-5 text-zinc-400"></i>
+              </div>
+              <div class="flex-1">
+                <div class="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Accessories</div>
+                <div id="canvas-slot-Accessories-name" class="text-sm font-medium text-zinc-800 dark:text-zinc-200">Tap to select piece</div>
+              </div>
+            </div>
+          </div>
+
+          <button onclick="promptSaveOutfit()" class="w-full mt-3 py-3 rounded-xl bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 font-semibold text-sm shadow-md active:scale-[0.98] transition-all flex items-center justify-center gap-2">
+            <i data-lucide="bookmark" class="w-4 h-4"></i>
+            Save to Looks Library
+          </button>
+        </div>
+      </div>
+
+      <!-- Subtab 2: Saved Looks Gallery -->
+      <div id="subtab-looks" class="hidden space-y-3">
+        <div id="looks-gallery-list" class="space-y-3">
+          <!-- Dynamically populated look cards with per-piece recency -->
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEW 3: WEEKLY PLANNER -->
+    <section id="view-planner" class="hidden space-y-3">
+      <div class="flex items-center justify-between pb-1">
+        <div>
+          <h2 class="text-sm font-bold uppercase tracking-wider text-zinc-500">Weekly Wardrobe Schedule</h2>
+          <p class="text-xs text-zinc-400">Select any day to plan or check wear freshness</p>
+        </div>
+        <span class="text-[11px] font-medium bg-zinc-200/70 dark:bg-zinc-800 px-2 py-0.5 rounded-full text-zinc-600 dark:text-zinc-300">7 Days</span>
+      </div>
+
+      <div id="weekly-planner-container" class="space-y-3">
+        <!-- 7 Days Cards rendered via JS -->
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Bottom Navigation Bar -->
+  <nav class="fixed bottom-0 inset-x-0 z-30 bg-zinc-50/95 dark:bg-zinc-950/95 backdrop-blur-md border-t border-zinc-200 dark:border-zinc-800 pb-[env(safe-area-inset-bottom,12px)]">
+    <div class="max-w-lg mx-auto flex items-center justify-around h-16 px-2">
+      <button onclick="switchTab('closet')" id="nav-btn-closet" class="flex-1 flex flex-col items-center justify-center gap-1 text-zinc-900 dark:text-white transition-colors">
+        <i data-lucide="grid" class="w-5 h-5"></i>
+        <span class="text-[11px] font-semibold">Closet</span>
+      </button>
+
+      <button onclick="switchTab('outfits')" id="nav-btn-outfits" class="flex-1 flex flex-col items-center justify-center gap-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors">
+        <i data-lucide="sparkles" class="w-5 h-5"></i>
+        <span class="text-[11px] font-semibold">Outfits</span>
+      </button>
+
+      <button onclick="switchTab('planner')" id="nav-btn-planner" class="flex-1 flex flex-col items-center justify-center gap-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors">
+        <i data-lucide="calendar" class="w-5 h-5"></i>
+        <span class="text-[11px] font-semibold">Planner</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- ================= MODALS & SHEETS ================= -->
+
+  <!-- Modal 1: Add Item (With Dual Camera / Photo Library Choice) -->
+  <div id="modal-add-item" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden items-end sm:items-center justify-center">
+    <div class="bg-white dark:bg-zinc-900 w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl p-6 shadow-2xl max-h-[92vh] overflow-y-auto">
+      <div class="flex items-center justify-between pb-3 border-b border-zinc-100 dark:border-zinc-800">
+        <div>
+          <h3 class="font-bold text-lg">Add Wardrobe Piece</h3>
+          <p class="text-xs text-zinc-400">Snap a photo or upload from library</p>
+        </div>
+        <button onclick="closeModal('modal-add-item')" class="p-1 rounded-full text-zinc-400 hover:text-zinc-600">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <form id="add-item-form" onsubmit="handleCreateItem(event)" class="mt-4 space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-2">Photo of Item</label>
+          <div id="item-preview-box" class="relative flex flex-col items-center justify-center border-2 border-dashed border-zinc-300 dark:border-zinc-700 rounded-2xl h-48 bg-zinc-50 dark:bg-zinc-800/40 overflow-hidden">
+            <img id="item-preview-img" class="absolute inset-0 w-full h-full object-cover hidden" />
+            <div id="item-upload-placeholder" class="flex flex-col items-center text-center p-4">
+              <i data-lucide="image" class="w-8 h-8 text-zinc-400 mb-2"></i>
+              <span class="text-xs font-semibold text-zinc-600 dark:text-zinc-300">No Photo Selected</span>
+              <span class="text-[10px] text-zinc-400 mt-0.5">Use the buttons below to add photo</span>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2 mt-2.5">
+            <button type="button" onclick="document.getElementById('camera-capture-input').click()" class="py-2.5 px-3 rounded-xl bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 font-semibold text-xs flex items-center justify-center gap-1.5 active:scale-95 transition-all">
+              <i data-lucide="camera" class="w-4 h-4 text-brand-600"></i>
+              <span>Take Photo</span>
+            </button>
+            <button type="button" onclick="document.getElementById('library-file-input').click()" class="py-2.5 px-3 rounded-xl bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 font-semibold text-xs flex items-center justify-center gap-1.5 active:scale-95 transition-all">
+              <i data-lucide="images" class="w-4 h-4 text-indigo-500"></i>
+              <span>Photo Library</span>
+            </button>
+          </div>
+
+          <input type="file" id="camera-capture-input" accept="image/*" capture="environment" class="hidden" onchange="previewAndCompressImage(this)" />
+          <input type="file" id="library-file-input" accept="image/*" class="hidden" onchange="previewAndCompressImage(this)" />
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-1">Item Name</label>
+          <input type="text" id="item-name-input" placeholder="e.g. Navy Merino Quarter-Zip" required class="w-full px-3.5 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/70 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-white" />
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-1">Category</label>
+          <select id="item-category-input" class="w-full px-3.5 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/70 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-white">
+            <option value="Tops">Tops / Shirts (Higher wear penalty)</option>
+            <option value="Quarterzips">Quarter-zips & Sweaters</option>
+            <option value="Outerwear">Jackets & Outerwear (High reusability)</option>
+            <option value="Bottoms">Pants & Bottoms (Multi-day wear)</option>
+            <option value="Shoes">Shoes</option>
+            <option value="Accessories">Accessories</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-1">Tags (comma separated)</label>
+          <input type="text" id="item-tags-input" placeholder="e.g. work, casual, winter" class="w-full px-3.5 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/70 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-white" />
+        </div>
+
+        <button type="submit" id="save-item-btn" class="w-full py-3.5 rounded-xl bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 font-semibold text-sm shadow-md active:scale-[0.98] transition-transform flex items-center justify-center gap-2">
+          <i data-lucide="check" class="w-4 h-4"></i>
+          Save to Wardrobe
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal 2: Item Detail & Cross-Referenced Outfits -->
+  <div id="modal-item-detail" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden items-end sm:items-center justify-center">
+    <div class="bg-white dark:bg-zinc-900 w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl p-6 shadow-2xl max-h-[88vh] overflow-y-auto">
+      <div class="flex items-center justify-between pb-3 border-b border-zinc-100 dark:border-zinc-800">
+        <h3 id="detail-item-title" class="font-bold text-lg truncate">Item Details</h3>
+        <button onclick="closeModal('modal-item-detail')" class="p-1 rounded-full text-zinc-400 hover:text-zinc-600">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="mt-4 space-y-4">
+        <div class="w-full h-56 rounded-2xl overflow-hidden bg-zinc-100 dark:bg-zinc-800 relative">
+          <img id="detail-item-img" class="w-full h-full object-cover" />
+          <span id="detail-item-category-badge" class="absolute bottom-3 left-3 bg-black/75 backdrop-blur-md text-white text-xs px-2.5 py-1 rounded-full font-medium"></span>
+          <span id="detail-item-wear-badge" class="absolute top-3 right-3 backdrop-blur-md text-[10px] px-2.5 py-1 rounded-full font-semibold"></span>
+        </div>
+
+        <div class="flex items-center justify-between">
+          <div>
+            <div id="detail-item-tags" class="flex flex-wrap gap-1 mb-1"></div>
+            <div class="text-[11px] text-zinc-400" id="detail-item-date"></div>
+          </div>
+          <button id="detail-item-delete-btn" class="p-2 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-xl transition-colors">
+            <i data-lucide="trash-2" class="w-5 h-5"></i>
+          </button>
+        </div>
+
+        <!-- Cross Reference Section -->
+        <div class="pt-4 border-t border-zinc-100 dark:border-zinc-800">
+          <div class="flex items-center justify-between mb-2">
+            <h4 class="text-xs font-bold text-zinc-500 uppercase tracking-wider">Outfits Featuring This Piece</h4>
+            <span class="text-[10px] text-zinc-400">Shows wear recency for every piece</span>
+          </div>
+          <div id="detail-matched-outfits" class="space-y-3">
+            <!-- Populated via JS -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 3: Planner Main Choice (The 2 Ways: Pre-Made Look OR Select Item) -->
+  <div id="modal-planner-choice" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden items-end sm:items-center justify-center">
+    <div class="bg-white dark:bg-zinc-900 w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl p-6 shadow-2xl">
+      <div class="flex items-center justify-between pb-3 border-b border-zinc-100 dark:border-zinc-800">
+        <div>
+          <h3 id="planner-choice-day-title" class="font-bold text-base">Plan Outfit for Day</h3>
+          <p class="text-xs text-zinc-400">Choose how you want to build today's look</p>
+        </div>
+        <button onclick="closeModal('modal-planner-choice')" class="p-1 rounded-full text-zinc-400">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="mt-4 space-y-3">
+        <!-- Choice 1: Pre-Saved Outfit -->
+        <div onclick="proceedWithPreMadeOutfitChoice()" class="p-4 rounded-2xl bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200/80 dark:border-zinc-700/80 cursor-pointer active:scale-[0.98] transition-transform flex items-center gap-3.5 group hover:border-brand-500">
+          <div class="w-12 h-12 rounded-xl bg-brand-50 dark:bg-brand-950/50 text-brand-600 dark:text-brand-400 flex items-center justify-center shrink-0">
+            <i data-lucide="sparkles" class="w-6 h-6"></i>
+          </div>
+          <div class="flex-1">
+            <div class="flex items-center gap-1.5">
+              <h4 class="text-sm font-bold text-zinc-900 dark:text-zinc-100 group-hover:text-brand-600">Select a Pre-Made Outfit</h4>
+              <span class="text-[9px] uppercase tracking-wider font-extrabold bg-brand-100 text-brand-800 dark:bg-brand-950 dark:text-brand-300 px-1.5 py-0.5 rounded">Scored</span>
+            </div>
+            <p class="text-xs text-zinc-400 mt-0.5">Pick any full outfit; displays individual wear recency for every piece</p>
+          </div>
+          <i data-lucide="chevron-right" class="w-5 h-5 text-zinc-400"></i>
+        </div>
+
+        <!-- Choice 2: Select an Anchor Item (Shirt, Pants, Quarterzip, etc.) -->
+        <div onclick="proceedWithItemAnchorChoice()" class="p-4 rounded-2xl bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200/80 dark:border-zinc-700/80 cursor-pointer active:scale-[0.98] transition-transform flex items-center gap-3.5 group hover:border-brand-500">
+          <div class="w-12 h-12 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
+            <i data-lucide="shirt" class="w-6 h-6"></i>
+          </div>
+          <div class="flex-1">
+            <div class="flex items-center gap-1.5">
+              <h4 class="text-sm font-bold text-zinc-900 dark:text-zinc-100 group-hover:text-indigo-600">Select a Clothing Item</h4>
+              <span class="text-[9px] uppercase tracking-wider font-extrabold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 px-1.5 py-0.5 rounded">Weighted</span>
+            </div>
+            <p class="text-xs text-zinc-400 mt-0.5">Pick a piece (shirt, pants, quarter-zip) to view every outfit featuring it</p>
+          </div>
+          <i data-lucide="chevron-right" class="w-5 h-5 text-zinc-400"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 4: Step 1 of Item Anchor - Pick the item from wardrobe (Weighted sort) -->
+  <div id="modal-item-anchor-picker" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden items-end sm:items-center justify-center">
+    <div class="bg-white dark:bg-zinc-900 w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl p-6 shadow-2xl max-h-[84vh] flex flex-col">
+      <div class="flex items-center justify-between pb-2.5 border-b border-zinc-100 dark:border-zinc-800 shrink-0">
+        <div>
+          <h3 class="font-bold text-base">Select Item to Base Look On</h3>
+          <p class="text-xs text-zinc-400">Tops penalized heavier for recent wear than pants</p>
+        </div>
+        <button onclick="closeModal('modal-item-anchor-picker')" class="p-1 rounded-full text-zinc-400">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Sorting Info Bar -->
+      <div class="flex items-center justify-between py-1.5 px-2 text-[11px] font-medium text-zinc-500 bg-zinc-100 dark:bg-zinc-800/60 rounded-xl mt-2 shrink-0">
+        <span class="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-semibold">
+          <i data-lucide="arrow-up" class="w-3 h-3"></i> Clean & Rested First
+        </span>
+        <span class="flex items-center gap-1 text-amber-600 dark:text-amber-400 font-semibold">
+          Recently Worn at Bottom <i data-lucide="arrow-down" class="w-3 h-3"></i>
+        </span>
+      </div>
+
+      <!-- Category Filter Pills inside Picker -->
+      <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-2 text-xs font-semibold shrink-0">
+        <button onclick="filterAnchorItems('All')" class="anchor-cat-pill active px-3 py-1 rounded-full bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 whitespace-nowrap">All</button>
+        <button onclick="filterAnchorItems('Tops')" class="anchor-cat-pill px-3 py-1 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 whitespace-nowrap">Tops / Shirts</button>
+        <button onclick="filterAnchorItems('Quarterzips')" class="anchor-cat-pill px-3 py-1 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 whitespace-nowrap">Quarter-zips</button>
+        <button onclick="filterAnchorItems('Bottoms')" class="anchor-cat-pill px-3 py-1 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 whitespace-nowrap">Pants</button>
+        <button onclick="filterAnchorItems('Outerwear')" class="anchor-cat-pill px-3 py-1 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 whitespace-nowrap">Jackets</button>
+        <button onclick="filterAnchorItems('Shoes')" class="anchor-cat-pill px-3 py-1 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 whitespace-nowrap">Shoes</button>
+      </div>
+
+      <div id="anchor-items-grid" class="grid grid-cols-3 gap-2.5 overflow-y-auto pt-1 flex-1">
+        <!-- Rendered items -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 5: Step 2 of Item Anchor - Shows every outfit featuring that selected item with per-piece wear breakdown -->
+  <div id="modal-anchor-outfits-results" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden items-end sm:items-center justify-center">
+    <div class="bg-white dark:bg-zinc-900 w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl p-6 shadow-2xl max-h-[84vh] flex flex-col">
+      <div class="flex items-center justify-between pb-3 border-b border-zinc-100 dark:border-zinc-800 shrink-0">
+        <div class="flex items-center gap-2.5">
+          <div id="selected-anchor-item-thumb" class="w-11 h-11 rounded-lg overflow-hidden bg-zinc-100 dark:bg-zinc-800 shrink-0"></div>
+          <div>
+            <h3 id="selected-anchor-item-title" class="font-bold text-sm truncate max-w-[200px]">Matching Outfits</h3>
+            <p id="selected-anchor-item-recency" class="text-[11px] text-zinc-400 font-medium"></p>
+          </div>
+        </div>
+        <button onclick="closeModal('modal-anchor-outfits-results')" class="p-1 rounded-full text-zinc-400">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div id="anchor-matched-outfits-list" class="space-y-3 overflow-y-auto pt-3 flex-1">
+        <!-- Outfits featuring the item with each piece's wear recency badge -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 6: Pick Pre-Saved Outfit List for Day (With individual piece breakdown & freshness ranking) -->
+  <div id="modal-outfit-picker" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden items-end sm:items-center justify-center">
+    <div class="bg-white dark:bg-zinc-900 w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl p-6 shadow-2xl max-h-[84vh] flex flex-col">
+      <div class="flex items-center justify-between pb-2 border-b border-zinc-100 dark:border-zinc-800 shrink-0">
+        <div>
+          <h3 id="outfit-picker-title" class="font-bold text-base">Assign Outfit to Day</h3>
+          <p class="text-xs text-zinc-400">Shows wear recency for each item (tops weighted heavier)</p>
+        </div>
+        <button onclick="closeModal('modal-outfit-picker')" class="p-1 rounded-full text-zinc-400">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <div id="outfit-picker-list" class="space-y-3 overflow-y-auto pt-3 flex-1">
+        <!-- Saved looks list -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 7: Generic Item Picker for Mixer Slots -->
+  <div id="modal-item-picker" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden items-end sm:items-center justify-center">
+    <div class="bg-white dark:bg-zinc-900 w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl p-6 shadow-2xl max-h-[82vh] flex flex-col">
+      <div class="flex items-center justify-between pb-2 border-b border-zinc-100 dark:border-zinc-800 shrink-0">
+        <div>
+          <h3 id="picker-title" class="font-bold text-base">Select Item</h3>
+          <p class="text-xs text-zinc-400">Sorted with most recently worn at bottom</p>
+        </div>
+        <button onclick="closeModal('modal-item-picker')" class="p-1 rounded-full text-zinc-400">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <div class="flex items-center justify-between py-1 px-1 text-[11px] font-medium text-zinc-400 bg-zinc-50 dark:bg-zinc-800/40 rounded-lg mt-1 shrink-0">
+        <span class="text-emerald-600 dark:text-emerald-400 font-semibold">&uarr; Least recently worn</span>
+        <span class="text-amber-600 dark:text-amber-400 font-semibold">Recent at bottom &darr;</span>
+      </div>
+      <div id="picker-grid" class="grid grid-cols-3 gap-2.5 overflow-y-auto pt-3 flex-1">
+        <!-- Items -->
+      </div>
+    </div>
+  </div>
+
+  <!-- JAVASCRIPT LOGIC -->
+  <script>
+    /**
+     * DATABASE ARCHITECTURE (IndexedDB)
+     */
+    const DB_NAME = 'PocketClosetDB';
+    const DB_VERSION = 1;
+    let dbInstance = null;
+
+    function openDatabase() {
+      return new Promise((resolve, reject) => {
+        const req = indexedDB.open(DB_NAME, DB_VERSION);
+        req.onupgradeneeded = (e) => {
+          const db = e.target.result;
+          if (!db.objectStoreNames.contains('clothing_items')) {
+            const itemStore = db.createObjectStore('clothing_items', { keyPath: 'id' });
+            itemStore.createIndex('category', 'category', { unique: false });
+          }
+          if (!db.objectStoreNames.contains('saved_outfits')) {
+            db.createObjectStore('saved_outfits', { keyPath: 'id' });
+          }
+        };
+        req.onsuccess = (e) => {
+          dbInstance = e.target.result;
+          resolve(dbInstance);
+        };
+        req.onerror = (e) => reject(e.target.error);
+      });
+    }
+
+    const db = {
+      async add(storeName, item) {
+        return new Promise((resolve, reject) => {
+          const tx = dbInstance.transaction(storeName, 'readwrite');
+          const store = tx.objectStore(storeName);
+          const req = store.add(item);
+          req.onsuccess = () => resolve(req.result);
+          req.onerror = () => reject(req.error);
+        });
+      },
+      async getAll(storeName) {
+        return new Promise((resolve, reject) => {
+          const tx = dbInstance.transaction(storeName, 'readonly');
+          const store = tx.objectStore(storeName);
+          const req = store.getAll();
+          req.onsuccess = () => resolve(req.result);
+          req.onerror = () => reject(req.error);
+        });
+      },
+      async get(storeName, key) {
+        return new Promise((resolve, reject) => {
+          const tx = dbInstance.transaction(storeName, 'readonly');
+          const store = tx.objectStore(storeName);
+          const req = store.get(key);
+          req.onsuccess = () => resolve(req.result);
+          req.onerror = () => reject(req.error);
+        });
+      },
+      async delete(storeName, key) {
+        return new Promise((resolve, reject) => {
+          const tx = dbInstance.transaction(storeName, 'readwrite');
+          const store = tx.objectStore(storeName);
+          const req = store.delete(key);
+          req.onsuccess = () => resolve();
+          req.onerror = () => reject(req.error);
+        });
+      }
+    };
+
+    /**
+     * STATE MANAGEMENT
+     */
+    let currentTab = 'closet';
+    let closetCategoryFilter = 'All';
+    let stagedCompressedBlob = null;
+    let canvasSlots = {
+      Outerwear: null,
+      Quarterzips: null,
+      Tops: null,
+      Bottoms: null,
+      Shoes: null,
+      Accessories: null
+    };
+
+    let activePlanningDateKey = null; // currently selected date in weekly planner
+    let currentAnchorCategory = 'All';
+
+    // 7-day schedule rolling
+    const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    let plannerSchedule = {}; // { 'YYYY-MM-DD': { outfitId, outfitName, itemIds: [] } }
+
+    function getRolling7Days() {
+      const dates = [];
+      const today = new Date();
+      for (let i = 0; i < 7; i++) {
+        const d = new Date();
+        d.setDate(today.getDate() + i);
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        const dateKey = `${yyyy}-${mm}-${dd}`;
+        const dayName = i === 0 ? 'Today' : (i === 1 ? 'Tomorrow' : daysOfWeek[d.getDay()]);
+        const formattedDate = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+        dates.push({ dateKey, dayName, formattedDate });
+      }
+      return dates;
+    }
+
+    function loadPlannerStorage() {
+      try {
+        const raw = localStorage.getItem('pocket_closet_planner');
+        if (raw) plannerSchedule = JSON.parse(raw);
+      } catch (e) {
+        plannerSchedule = {};
+      }
+    }
+
+    function savePlannerStorage() {
+      localStorage.setItem('pocket_closet_planner', JSON.stringify(plannerSchedule));
+    }
+
+    /**
+     * WEAR RECENCY & CATEGORY WEIGHT ENGINE
+     * 
+     * Tops & Shirts have high wear penalties (3.0x) because shirts touch direct skin and need washing.
+     * Pants & Bottoms have standard/baseline penalty (1.0x) because trousers/jeans can be reworn safely.
+     * Quarterzips & Sweaters have intermediate penalty (1.8x).
+     * Jackets & Outerwear have low penalty (0.5x).
+     * Shoes & Accessories have minimal penalty (0.3x).
+     */
+    const CATEGORY_PENALTY_WEIGHTS = {
+      'Tops': 3.0,
+      'Quarterzips': 1.8,
+      'Bottoms': 1.0,
+      'Outerwear': 0.5,
+      'Shoes': 0.3,
+      'Accessories': 0.3
+    };
+
+    function getItemLastWornTimestamp(itemId) {
+      let latestTimestamp = 0;
+      for (const [dateKey, scheduleEntry] of Object.entries(plannerSchedule)) {
+        if (scheduleEntry && scheduleEntry.itemIds && scheduleEntry.itemIds.includes(itemId)) {
+          const parts = dateKey.split('-').map(Number);
+          if (parts.length === 3) {
+            const d = new Date(parts[0], parts[1] - 1, parts[2], 23, 59, 59);
+            const time = d.getTime();
+            if (time > latestTimestamp) {
+              latestTimestamp = time;
+            }
+          }
+        }
+      }
+      return latestTimestamp;
+    }
+
+    function getItemWearDaysAgo(itemId) {
+      const lastTimestamp = getItemLastWornTimestamp(itemId);
+      if (!lastTimestamp) return Infinity; // never worn
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const wornDate = new Date(lastTimestamp);
+      wornDate.setHours(0, 0, 0, 0);
+
+      return Math.round((today.getTime() - wornDate.getTime()) / (1000 * 60 * 60 * 24));
+    }
+
+    // Calculates item penalty: larger penalty means worn more recently and heavier category weighting
+    function getItemWearPenaltyScore(item) {
+      const daysAgo = getItemWearDaysAgo(item.id);
+      const weight = CATEGORY_PENALTY_WEIGHTS[item.category] || 1.0;
+
+      if (daysAgo === Infinity) return 0; // Fresh
+      if (daysAgo < 0) return 999 * weight; // Planned in upcoming days
+      if (daysAgo === 0) return 100 * weight; // Worn today (e.g. Top = 300, Pants = 100)
+      if (daysAgo === 1) return 50 * weight;  // Worn yesterday (e.g. Top = 150, Pants = 50)
+      if (daysAgo === 2) return 25 * weight;  // Worn 2 days ago (e.g. Top = 75, Pants = 25)
+      if (daysAgo <= 4) return 10 * weight;
+      if (daysAgo <= 7) return 4 * weight;
+      return 1 * weight;
+    }
+
+    // Sort items so least recently worn (lowest penalty) are at the TOP, most recent at the BOTTOM
+    function sortItemsByWearRecency(items) {
+      return [...items].sort((a, b) => {
+        const penaltyA = getItemWearPenaltyScore(a);
+        const penaltyB = getItemWearPenaltyScore(b);
+        if (penaltyA !== penaltyB) {
+          return penaltyA - penaltyB;
+        }
+        return (b.createdAt || 0) - (a.createdAt || 0);
+      });
+    }
+
+    function getWearBadgeData(itemId, category = '') {
+      const daysAgo = getItemWearDaysAgo(itemId);
+      const lastTimestamp = getItemLastWornTimestamp(itemId);
+
+      if (daysAgo === Infinity) {
+        return {
+          label: 'Not worn recently',
+          shortLabel: 'Fresh',
+          badgeClass: 'bg-emerald-500/90 text-white',
+          isRecent: false,
+          daysAgo: Infinity
+        };
+      }
+
+      if (daysAgo === 0) {
+        const isTop = category === 'Tops';
+        return {
+          label: isTop ? 'Worn Today (Wash needed)' : 'Worn Today',
+          shortLabel: 'Today',
+          badgeClass: 'bg-rose-500 text-white font-bold',
+          isRecent: true,
+          daysAgo: 0
+        };
+      }
+
+      if (daysAgo === 1) {
+        const isTop = category === 'Tops';
+        return {
+          label: isTop ? 'Worn Yesterday (Needs wash)' : 'Worn Yesterday',
+          shortLabel: isTop ? 'Yest. (Wash)' : 'Yesterday',
+          badgeClass: isTop ? 'bg-rose-500/90 text-white font-bold' : 'bg-amber-500 text-white font-semibold',
+          isRecent: true,
+          daysAgo: 1
+        };
+      }
+
+      if (daysAgo < 0) {
+        const formatted = new Date(lastTimestamp).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+        return {
+          label: `Planned (${formatted})`,
+          shortLabel: `Plan: ${formatted}`,
+          badgeClass: 'bg-indigo-500/90 text-white font-semibold',
+          isRecent: true,
+          daysAgo: daysAgo
+        };
+      }
+
+      if (daysAgo <= 7) {
+        return {
+          label: `Worn ${daysAgo}d ago`,
+          shortLabel: `${daysAgo}d ago`,
+          badgeClass: daysAgo <= 2 ? 'bg-amber-600/90 text-white' : 'bg-zinc-700/80 text-white',
+          isRecent: daysAgo <= 2,
+          daysAgo: daysAgo
+        };
+      }
+
+      const formatted = new Date(lastTimestamp).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+      return {
+        label: `Worn ${formatted}`,
+        shortLabel: formatted,
+        badgeClass: 'bg-zinc-700/80 text-white',
+        isRecent: false,
+        daysAgo: daysAgo
+      };
+    }
+
+    /**
+     * OUTFIT-LEVEL COMPOSITE SCORE CALCULATION
+     * Takes all pieces in an outfit, evaluates each piece's category & wear recency,
+     * and produces an aggregate freshness assessment where tops penalize more heavily.
+     */
+    function calculateOutfitWearSummary(outfit, itemsMap) {
+      const items = (outfit.itemIds || []).map(id => itemsMap.get(id)).filter(Boolean);
+      let totalPenalty = 0;
+      let worstPiece = null;
+      let topItem = null;
+      let pantsItem = null;
+
+      items.forEach(item => {
+        const penalty = getItemWearPenaltyScore(item);
+        const daysAgo = getItemWearDaysAgo(item.id);
+        totalPenalty += penalty;
+
+        if (item.category === 'Tops') topItem = { item, daysAgo, penalty };
+        if (item.category === 'Bottoms') pantsItem = { item, daysAgo, penalty };
+
+        if (!worstPiece || penalty > worstPiece.penalty) {
+          worstPiece = { item, penalty, daysAgo };
+        }
+      });
+
+      // Status title & color based on weighted penalty
+      let statusBadge = { label: '100% Fresh & Ready', class: 'bg-emerald-500/90 text-white' };
+
+      if (topItem && topItem.daysAgo <= 1) {
+        // Specific top penalty notice
+        statusBadge = {
+          label: topItem.daysAgo === 0 ? 'Top Worn Today' : 'Top Worn Yesterday',
+          class: 'bg-rose-500 text-white font-bold'
+        };
+      } else if (worstPiece && worstPiece.daysAgo === 0) {
+        statusBadge = {
+          label: `${formatCategoryName(worstPiece.item.category)} Worn Today`,
+          class: 'bg-rose-500/90 text-white font-semibold'
+        };
+      } else if (worstPiece && worstPiece.daysAgo === 1) {
+        statusBadge = {
+          label: worstPiece.item.category === 'Bottoms' ? 'Pants Worn Yesterday (Re-wearable)' : `${formatCategoryName(worstPiece.item.category)} Worn Yesterday`,
+          class: worstPiece.item.category === 'Bottoms' ? 'bg-amber-500/90 text-white' : 'bg-amber-600/90 text-white font-semibold'
+        };
+      } else if (totalPenalty > 30) {
+        statusBadge = { label: 'Needs Rest', class: 'bg-amber-600/80 text-white' };
+      } else if (totalPenalty > 0) {
+        statusBadge = { label: 'Good Rotation', class: 'bg-emerald-600/90 text-white' };
+      }
+
+      return {
+        totalPenalty,
+        statusBadge,
+        items
+      };
+    }
+
+    /**
+     * CLIENT-SIDE IMAGE COMPRESSION (Max 800px)
+     */
+    function previewAndCompressImage(input) {
+      const file = input.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const MAX_SIZE = 800;
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height && width > MAX_SIZE) {
+            height = Math.round((height * MAX_SIZE) / width);
+            width = MAX_SIZE;
+          } else if (height > MAX_SIZE) {
+            width = Math.round((width * MAX_SIZE) / height);
+            height = MAX_SIZE;
+          }
+
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+
+          canvas.toBlob((blob) => {
+            stagedCompressedBlob = blob;
+            const preview = document.getElementById('item-preview-img');
+            preview.src = URL.createObjectURL(blob);
+            preview.classList.remove('hidden');
+            document.getElementById('item-upload-placeholder').classList.add('hidden');
+          }, 'image/jpeg', 0.85);
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    /**
+     * NAVIGATION TAB SWITCHING
+     */
+    function switchTab(tabId) {
+      currentTab = tabId;
+      ['closet', 'outfits', 'planner'].forEach((t) => {
+        const view = document.getElementById(`view-${t}`);
+        const btn = document.getElementById(`nav-btn-${t}`);
+        if (t === tabId) {
+          view.classList.remove('hidden');
+          btn.classList.add('text-zinc-900', 'dark:text-white');
+          btn.classList.remove('text-zinc-400');
+        } else {
+          view.classList.add('hidden');
+          btn.classList.remove('text-zinc-900', 'dark:text-white');
+          btn.classList.add('text-zinc-400');
+        }
+      });
+
+      if (tabId === 'closet') renderClosetGrid();
+      if (tabId === 'outfits') renderLooksGallery();
+      if (tabId === 'planner') renderPlanner();
+      lucide.createIcons();
+    }
+
+    function setOutfitSubTab(subTab) {
+      const isCanvas = subTab === 'canvas';
+      document.getElementById('subtab-canvas').classList.toggle('hidden', !isCanvas);
+      document.getElementById('subtab-looks').classList.toggle('hidden', isCanvas);
+
+      const canvasBtn = document.getElementById('subtab-canvas-btn');
+      const looksBtn = document.getElementById('subtab-looks-btn');
+
+      if (isCanvas) {
+        canvasBtn.className = "flex-1 py-1.5 text-xs font-semibold rounded-lg bg-white dark:bg-zinc-800 shadow-sm transition-all";
+        looksBtn.className = "flex-1 py-1.5 text-xs font-medium rounded-lg text-zinc-600 dark:text-zinc-400 transition-all";
+      } else {
+        looksBtn.className = "flex-1 py-1.5 text-xs font-semibold rounded-lg bg-white dark:bg-zinc-800 shadow-sm transition-all";
+        canvasBtn.className = "flex-1 py-1.5 text-xs font-medium rounded-lg text-zinc-600 dark:text-zinc-400 transition-all";
+        renderLooksGallery();
+      }
+      lucide.createIcons();
+    }
+
+    /**
+     * CLOSET LOGIC
+     */
+    function setClosetFilter(category) {
+      closetCategoryFilter = category;
+      document.querySelectorAll('.category-pill').forEach((pill) => {
+        const isCurrent = pill.innerText.toLowerCase().includes(category.toLowerCase()) || 
+                          (category === 'Quarterzips' && pill.innerText.includes('Quarter-zip'));
+        if (isCurrent) {
+          pill.className = "category-pill active px-3.5 py-1.5 rounded-full whitespace-nowrap bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 transition-all";
+        } else {
+          pill.className = "category-pill px-3.5 py-1.5 rounded-full whitespace-nowrap bg-zinc-200/80 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 transition-all";
+        }
+      });
+      renderClosetGrid();
+    }
+
+    async function renderClosetGrid() {
+      const container = document.getElementById('closet-grid');
+      container.innerHTML = '';
+      const items = await db.getAll('clothing_items');
+
+      const filtered = closetCategoryFilter === 'All' 
+        ? items 
+        : items.filter(it => it.category.toLowerCase() === closetCategoryFilter.toLowerCase());
+
+      if (filtered.length === 0) {
+        container.innerHTML = `
+          <div class="col-span-2 py-16 flex flex-col items-center justify-center text-center text-zinc-400">
+            <i data-lucide="hanger" class="w-12 h-12 stroke-[1.5] mb-2 opacity-40"></i>
+            <p class="text-sm font-medium">No items in this section</p>
+            <p class="text-xs text-zinc-500 mt-1">Tap "+ Add Piece" at the top to add photos</p>
+          </div>
+        `;
+        lucide.createIcons();
+        return;
+      }
+
+      filtered.sort((a, b) => b.createdAt - a.createdAt);
+
+      filtered.forEach((item) => {
+        const card = document.createElement('div');
+        card.className = "group relative rounded-2xl overflow-hidden bg-zinc-100 dark:bg-zinc-900 border border-zinc-200/70 dark:border-zinc-800/80 flex flex-col cursor-pointer active:scale-95 transition-transform shadow-sm";
+        const imgUrl = URL.createObjectURL(item.photoBlob);
+        const wearInfo = getWearBadgeData(item.id, item.category);
+
+        card.onclick = () => openItemDetailModal(item.id);
+
+        card.innerHTML = `
+          <div class="w-full aspect-[4/5] bg-zinc-200 dark:bg-zinc-800 overflow-hidden relative">
+            <img src="${imgUrl}" alt="${item.name}" class="w-full h-full object-cover transition-transform group-hover:scale-105 duration-300" />
+            <span class="absolute top-2 left-2 bg-black/60 backdrop-blur-md text-white text-[10px] px-2 py-0.5 rounded-full font-medium">${formatCategoryName(item.category)}</span>
+            <span class="absolute bottom-2 right-2 backdrop-blur-md text-[9px] px-2 py-0.5 rounded-full font-semibold ${wearInfo.badgeClass}">${wearInfo.shortLabel}</span>
+          </div>
+          <div class="p-2.5">
+            <div class="text-xs font-semibold truncate text-zinc-900 dark:text-zinc-100">${item.name}</div>
+            <div class="flex items-center gap-1 mt-1 overflow-hidden truncate">
+              ${item.tags.map(t => `<span class="text-[9px] bg-zinc-200/80 dark:bg-zinc-800 px-1.5 py-0.5 rounded text-zinc-600 dark:text-zinc-400">#${t}</span>`).join('')}
+            </div>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+
+      lucide.createIcons();
+    }
+
+    function formatCategoryName(cat) {
+      if (cat === 'Quarterzips') return 'Quarter-zip';
+      return cat;
+    }
+
+    async function handleCreateItem(event) {
+      event.preventDefault();
+      if (!stagedCompressedBlob) {
+        alert("Please take a photo or select an image from your library.");
+        return;
+      }
+
+      const name = document.getElementById('item-name-input').value.trim();
+      const category = document.getElementById('item-category-input').value;
+      const rawTags = document.getElementById('item-tags-input').value;
+      const tags = rawTags.split(',').map(t => t.trim()).filter(Boolean);
+
+      const newItem = {
+        id: 'item_' + Date.now(),
+        name,
+        category,
+        tags,
+        photoBlob: stagedCompressedBlob,
+        createdAt: Date.now()
+      };
+
+      await db.add('clothing_items', newItem);
+      closeModal('modal-add-item');
+      resetAddItemForm();
+      renderClosetGrid();
+    }
+
+    function resetAddItemForm() {
+      document.getElementById('add-item-form').reset();
+      document.getElementById('item-preview-img').src = '';
+      document.getElementById('item-preview-img').classList.add('hidden');
+      document.getElementById('item-upload-placeholder').classList.remove('hidden');
+      stagedCompressedBlob = null;
+    }
+
+    /**
+     * ITEM DETAIL MODAL & CROSS-REFERENCING LOOKS
+     */
+    async function openItemDetailModal(itemId) {
+      const item = await db.get('clothing_items', itemId);
+      if (!item) return;
+
+      const wearInfo = getWearBadgeData(item.id, item.category);
+
+      document.getElementById('detail-item-title').innerText = item.name;
+      document.getElementById('detail-item-category-badge').innerText = formatCategoryName(item.category);
+      document.getElementById('detail-item-wear-badge').innerText = wearInfo.label;
+      document.getElementById('detail-item-wear-badge').className = `absolute top-3 right-3 backdrop-blur-md text-[10px] px-2.5 py-1 rounded-full font-semibold ${wearInfo.badgeClass}`;
+      document.getElementById('detail-item-img').src = URL.createObjectURL(item.photoBlob);
+      document.getElementById('detail-item-date').innerText = 'Added on ' + new Date(item.createdAt).toLocaleDateString();
+
+      const tagsContainer = document.getElementById('detail-item-tags');
+      tagsContainer.innerHTML = item.tags.map(t => `<span class="text-xs bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded-md font-medium text-zinc-600 dark:text-zinc-300">#${t}</span>`).join('');
+
+      const delBtn = document.getElementById('detail-item-delete-btn');
+      delBtn.onclick = async () => {
+        if (confirm(`Remove "${item.name}" from your wardrobe?`)) {
+          await db.delete('clothing_items', item.id);
+          closeModal('modal-item-detail');
+          renderClosetGrid();
+        }
+      };
+
+      // Match outfits featuring this piece & show breakdown of all pieces
+      const outfits = await db.getAll('saved_outfits');
+      const allItems = await db.getAll('clothing_items');
+      const itemsMap = new Map(allItems.map(i => [i.id, i]));
+      const matchedOutfits = outfits.filter(o => o.itemIds && o.itemIds.includes(item.id));
+      const matchedContainer = document.getElementById('detail-matched-outfits');
+      matchedContainer.innerHTML = '';
+
+      if (matchedOutfits.length === 0) {
+        matchedContainer.innerHTML = `
+          <div class="py-4 text-center rounded-xl bg-zinc-50 dark:bg-zinc-800/40 text-xs text-zinc-400">
+            This piece isn't featured in any saved outfit looks yet.
+          </div>
+        `;
+      } else {
+        for (const look of matchedOutfits) {
+          const summary = calculateOutfitWearSummary(look, itemsMap);
+          const card = document.createElement('div');
+          card.className = "p-3 rounded-2xl bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200/70 dark:border-zinc-800 space-y-2.5";
+
+          // Generate each piece's thumbnail + individual wear recency badge
+          const pieceBreakdownHtml = summary.items.map(it => {
+            const pWear = getWearBadgeData(it.id, it.category);
+            return `
+              <div class="flex flex-col items-center shrink-0 w-16">
+                <div class="w-16 h-20 rounded-xl overflow-hidden bg-zinc-200 dark:bg-zinc-700 relative border border-zinc-200 dark:border-zinc-600">
+                  <img src="${URL.createObjectURL(it.photoBlob)}" class="w-full h-full object-cover" />
+                  <span class="absolute top-1 left-1 bg-black/70 text-white text-[8px] px-1 py-0.2 rounded font-bold uppercase">${formatCategoryName(it.category).substring(0, 4)}</span>
+                </div>
+                <span class="mt-1 text-[8px] px-1 py-0.5 rounded-full font-bold truncate max-w-full text-center ${pWear.badgeClass}">
+                  ${pWear.shortLabel}
+                </span>
+                <span class="text-[9px] text-zinc-400 truncate max-w-full text-center mt-0.5">${it.name}</span>
+              </div>
+            `;
+          }).join('');
+
+          card.innerHTML = `
+            <div class="flex items-center justify-between">
+              <div>
+                <div class="text-xs font-bold text-zinc-900 dark:text-zinc-100">${look.name}</div>
+                <div class="flex items-center gap-1.5 mt-0.5">
+                  <span class="text-[9px] px-2 py-0.5 rounded-full font-bold ${summary.statusBadge.class}">${summary.statusBadge.label}</span>
+                </div>
+              </div>
+              <button onclick="promptWearOutfitOnSpecificDay('${look.id}')" class="px-3 py-1.5 rounded-lg bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 text-xs font-semibold active:scale-95 transition-transform flex items-center gap-1">
+                <i data-lucide="calendar" class="w-3.5 h-3.5"></i>
+                Wear on [Day]
+              </button>
+            </div>
+            <div class="flex items-start gap-2 overflow-x-auto no-scrollbar py-1">
+              ${pieceBreakdownHtml}
+            </div>
+          `;
+          matchedContainer.appendChild(card);
+        }
+      }
+
+      openModal('modal-item-detail');
+      lucide.createIcons();
+    }
+
+    /**
+     * OUTFIT CANVAS MIXER
+     */
+    function selectSlotForCanvas(category) {
+      openItemPickerModal(`Select ${formatCategoryName(category)}`, category, async (selectedItem) => {
+        canvasSlots[category] = selectedItem;
+        updateCanvasUI();
+      });
+    }
+
+    function updateCanvasUI() {
+      ['Outerwear', 'Quarterzips', 'Tops', 'Bottoms', 'Shoes', 'Accessories'].forEach((cat) => {
+        const item = canvasSlots[cat];
+        const imgEl = document.getElementById(`canvas-slot-${cat}-img`);
+        const nameEl = document.getElementById(`canvas-slot-${cat}-name`);
+
+        if (item) {
+          const wear = getWearBadgeData(item.id, item.category);
+          imgEl.innerHTML = `<img src="${URL.createObjectURL(item.photoBlob)}" class="w-full h-full object-cover" />`;
+          nameEl.innerHTML = `<span>${item.name}</span> <span class="text-[10px] ml-1.5 px-1.5 py-0.5 rounded-full font-bold ${wear.badgeClass}">${wear.shortLabel}</span>`;
+          nameEl.className = 'text-sm font-semibold text-brand-600 dark:text-brand-400 flex items-center';
+        } else {
+          imgEl.innerHTML = `<i data-lucide="${getCategoryIcon(cat)}" class="w-5 h-5 text-zinc-400"></i>`;
+          nameEl.innerText = 'Tap to select piece';
+          nameEl.className = 'text-sm font-medium text-zinc-800 dark:text-zinc-200';
+        }
+      });
+      lucide.createIcons();
+    }
+
+    function getCategoryIcon(cat) {
+      switch (cat) {
+        case 'Outerwear': return 'shield';
+        case 'Quarterzips': return 'tag';
+        case 'Tops': return 'shirt';
+        case 'Bottoms': return 'scissors';
+        case 'Shoes': return 'footprints';
+        case 'Accessories': return 'watch';
+        default: return 'circle';
+      }
+    }
+
+    function clearCanvas() {
+      canvasSlots = { Outerwear: null, Quarterzips: null, Tops: null, Bottoms: null, Shoes: null, Accessories: null };
+      updateCanvasUI();
+    }
+
+    async function promptSaveOutfit() {
+      const activeItems = Object.values(canvasSlots).filter(Boolean);
+      if (activeItems.length === 0) {
+        alert("Please add at least one item to the canvas before saving.");
+        return;
+      }
+
+      const name = prompt("Name this outfit look:", "Look #" + Math.floor(100 + Math.random() * 900));
+      if (!name) return;
+
+      const newOutfit = {
+        id: 'outfit_' + Date.now(),
+        name,
+        tags: [],
+        itemIds: activeItems.map(i => i.id),
+        createdAt: Date.now()
+      };
+
+      await db.add('saved_outfits', newOutfit);
+      alert(`"${name}" saved to your lookbook!`);
+      clearCanvas();
+      setOutfitSubTab('looks');
+    }
+
+    /**
+     * SAVED LOOKS GALLERY
+     * Displays complete look cards with each individual piece's wear recency badge.
+     */
+    async function renderLooksGallery() {
+      const listContainer = document.getElementById('looks-gallery-list');
+      listContainer.innerHTML = '';
+      const looks = await db.getAll('saved_outfits');
+      const allItems = await db.getAll('clothing_items');
+      const itemsMap = new Map(allItems.map(i => [i.id, i]));
+
+      if (looks.length === 0) {
+        listContainer.innerHTML = `
+          <div class="py-16 text-center text-zinc-400">
+            <i data-lucide="sparkles" class="w-10 h-10 stroke-[1.5] mx-auto mb-2 opacity-40"></i>
+            <p class="text-sm font-medium">No saved looks yet</p>
+            <p class="text-xs text-zinc-500 mt-1">Mix items on the Mixer Canvas and save them</p>
+          </div>
+        `;
+        lucide.createIcons();
+        return;
+      }
+
+      // Sort outfits by weighted readiness (lowest penalty first)
+      looks.sort((a, b) => {
+        const sumA = calculateOutfitWearSummary(a, itemsMap).totalPenalty;
+        const sumB = calculateOutfitWearSummary(b, itemsMap).totalPenalty;
+        return sumA - sumB;
+      });
+
+      looks.forEach((look) => {
+        const summary = calculateOutfitWearSummary(look, itemsMap);
+        const card = document.createElement('div');
+        card.className = "p-4 bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200/80 dark:border-zinc-800 space-y-3 shadow-sm";
+
+        const piecesHtml = summary.items.map(it => {
+          const pWear = getWearBadgeData(it.id, it.category);
+          return `
+            <div class="flex flex-col items-center shrink-0 w-16">
+              <div class="w-16 h-20 rounded-xl overflow-hidden bg-zinc-100 dark:bg-zinc-800 relative border border-zinc-200/80 dark:border-zinc-700">
+                <img src="${URL.createObjectURL(it.photoBlob)}" class="w-full h-full object-cover" />
+                <span class="absolute top-1 left-1 bg-black/70 text-white text-[8px] px-1 py-0.2 rounded font-bold uppercase">${formatCategoryName(it.category).substring(0, 4)}</span>
+              </div>
+              <span class="mt-1 text-[8px] px-1.5 py-0.5 rounded-full font-bold truncate max-w-full text-center ${pWear.badgeClass}">
+                ${pWear.shortLabel}
+              </span>
+              <span class="text-[9px] text-zinc-400 truncate max-w-full text-center mt-0.5">${it.name}</span>
+            </div>
+          `;
+        }).join('');
+
+        card.innerHTML = `
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="flex items-center gap-2">
+                <h4 class="font-bold text-base text-zinc-900 dark:text-zinc-100">${look.name}</h4>
+                <span class="text-[9px] px-2 py-0.5 rounded-full font-bold ${summary.statusBadge.class}">${summary.statusBadge.label}</span>
+              </div>
+              <p class="text-xs text-zinc-400 mt-0.5">${summary.items.length} pieces • Tops weighted strictly</p>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <button onclick="promptWearOutfitOnSpecificDay('${look.id}')" class="px-3 py-1.5 rounded-xl bg-brand-50 text-brand-600 dark:bg-brand-950/40 dark:text-brand-400 text-xs font-semibold active:scale-95 transition-transform flex items-center gap-1.5">
+                <i data-lucide="calendar-plus" class="w-3.5 h-3.5"></i>
+                Wear
+              </button>
+              <button onclick="deleteOutfitLook('${look.id}')" class="p-1.5 text-zinc-400 hover:text-rose-500 transition-colors">
+                <i data-lucide="trash-2" class="w-4 h-4"></i>
+              </button>
+            </div>
+          </div>
+          <div class="flex items-start gap-2.5 overflow-x-auto no-scrollbar py-1">
+            ${piecesHtml}
+          </div>
+        `;
+        listContainer.appendChild(card);
+      });
+
+      lucide.createIcons();
+    }
+
+    async function deleteOutfitLook(lookId) {
+      if (confirm("Delete this saved outfit look?")) {
+        await db.delete('saved_outfits', lookId);
+        renderLooksGallery();
+      }
+    }
+
+    /**
+     * WEEKLY PLANNER INTERACTION
+     */
+    async function renderPlanner() {
+      const container = document.getElementById('weekly-planner-container');
+      container.innerHTML = '';
+      const rollingDays = getRolling7Days();
+      const allItems = await db.getAll('clothing_items');
+      const itemsMap = new Map(allItems.map(i => [i.id, i]));
+
+      rollingDays.forEach((day) => {
+        const scheduleData = plannerSchedule[day.dateKey] || { itemIds: [] };
+        const activeItems = (scheduleData.itemIds || []).map(id => itemsMap.get(id)).filter(Boolean);
+
+        const card = document.createElement('div');
+        card.className = "bg-white dark:bg-zinc-900 rounded-2xl p-4 border border-zinc-200/80 dark:border-zinc-800 space-y-3 transition-all cursor-pointer shadow-sm hover:border-zinc-400 dark:hover:border-zinc-600";
+
+        card.onclick = (e) => {
+          if (e.target.closest('.stop-bubble')) return;
+          openDayPlannerChoice(day.dateKey, day.dayName, day.formattedDate);
+        };
+
+        let previewHtml = '';
+        if (activeItems.length > 0) {
+          previewHtml = `
+            <div class="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
+              ${activeItems.map(item => {
+                const wear = getWearBadgeData(item.id, item.category);
+                return `
+                  <div class="w-16 h-20 rounded-xl overflow-hidden bg-zinc-100 dark:bg-zinc-800 shrink-0 border border-zinc-200 dark:border-zinc-700 relative flex flex-col justify-between">
+                    <img src="${URL.createObjectURL(item.photoBlob)}" class="absolute inset-0 w-full h-full object-cover" title="${item.name}" />
+                    <span class="relative z-10 text-[8px] bg-black/70 text-white font-bold px-1 rounded-br w-max uppercase">${formatCategoryName(item.category).substring(0, 4)}</span>
+                    <span class="relative z-10 text-[8px] font-bold text-center px-1 py-0.5 rounded-t backdrop-blur-md ${wear.badgeClass}">${wear.shortLabel}</span>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          `;
+        } else {
+          previewHtml = `
+            <div class="py-3 px-3 rounded-xl bg-zinc-50 dark:bg-zinc-800/40 text-center text-xs text-zinc-400 flex items-center justify-center gap-1.5">
+              <i data-lucide="plus-circle" class="w-3.5 h-3.5 text-zinc-400"></i>
+              Tap to choose outfit or anchor item
+            </div>
+          `;
+        }
+
+        card.innerHTML = `
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="text-sm font-bold text-zinc-900 dark:text-zinc-100">${day.dayName}</span>
+              <span class="text-xs text-zinc-400">${day.formattedDate}</span>
+              ${scheduleData.outfitName ? `<span class="text-[10px] bg-brand-50 text-brand-600 dark:bg-brand-950/60 dark:text-brand-400 px-2 py-0.5 rounded-full font-semibold ml-1 truncate max-w-[120px]">${scheduleData.outfitName}</span>` : ''}
+            </div>
+            <div class="flex items-center gap-1 stop-bubble">
+              ${activeItems.length > 0 ? `
+                <button onclick="clearDayOutfit('${day.dateKey}')" class="text-xs text-rose-500 font-semibold px-2 py-1 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/30">Clear</button>
+              ` : `
+                <span class="text-xs font-semibold text-brand-600 dark:text-brand-400">Plan &rarr;</span>
+              `}
+            </div>
+          </div>
+          ${previewHtml}
+        `;
+
+        container.appendChild(card);
+      });
+
+      lucide.createIcons();
+    }
+
+    function openDayPlannerChoice(dateKey, dayName, formattedDate) {
+      activePlanningDateKey = dateKey;
+      document.getElementById('planner-choice-day-title').innerText = `Plan Outfit for ${dayName} (${formattedDate})`;
+      openModal('modal-planner-choice');
+      lucide.createIcons();
+    }
+
+    function clearDayOutfit(dateKey) {
+      delete plannerSchedule[dateKey];
+      savePlannerStorage();
+      renderPlanner();
+    }
+
+    /**
+     * PLANNER WAY 1: Pick Pre-Made Outfit
+     * Shows full outfits ranked by weighted piece freshness, and breaks down each piece.
+     */
+    async function proceedWithPreMadeOutfitChoice() {
+      closeModal('modal-planner-choice');
+      const looks = await db.getAll('saved_outfits');
+      const allItems = await db.getAll('clothing_items');
+      const itemsMap = new Map(allItems.map(i => [i.id, i]));
+      const listContainer = document.getElementById('outfit-picker-list');
+      listContainer.innerHTML = '';
+
+      if (looks.length === 0) {
+        listContainer.innerHTML = `
+          <div class="py-8 text-center text-zinc-400 text-xs">
+            No saved outfits found. Build one on the Mixer Canvas and save it!
+          </div>
+        `;
+      } else {
+        // Sort outfits so cleanest & most rested outfits appear first
+        looks.sort((a, b) => {
+          const sumA = calculateOutfitWearSummary(a, itemsMap).totalPenalty;
+          const sumB = calculateOutfitWearSummary(b, itemsMap).totalPenalty;
+          return sumA - sumB;
+        });
+
+        looks.forEach(look => {
+          const summary = calculateOutfitWearSummary(look, itemsMap);
+          const card = document.createElement('div');
+          card.className = "p-3.5 rounded-2xl bg-zinc-50 dark:bg-zinc-800/80 border border-zinc-200/80 dark:border-zinc-700 space-y-2 cursor-pointer active:scale-[0.98] transition-transform hover:border-brand-500";
+
+          const piecesHtml = summary.items.map(it => {
+            const pWear = getWearBadgeData(it.id, it.category);
+            return `
+              <div class="flex flex-col items-center shrink-0 w-14">
+                <div class="w-14 h-16 rounded-lg overflow-hidden bg-zinc-200 dark:bg-zinc-700 relative border border-zinc-200 dark:border-zinc-600">
+                  <img src="${URL.createObjectURL(it.photoBlob)}" class="w-full h-full object-cover" />
+                  <span class="absolute top-0 left-0 bg-black/75 text-white text-[7px] px-1 rounded-br uppercase font-bold">${formatCategoryName(it.category).substring(0, 4)}</span>
+                </div>
+                <span class="mt-1 text-[8px] px-1 py-0.5 rounded-full font-bold truncate max-w-full text-center ${pWear.badgeClass}">
+                  ${pWear.shortLabel}
+                </span>
+              </div>
+            `;
+          }).join('');
+
+          card.innerHTML = `
+            <div class="flex items-center justify-between">
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="font-bold text-sm text-zinc-900 dark:text-zinc-100">${look.name}</span>
+                  <span class="text-[9px] px-2 py-0.5 rounded-full font-bold ${summary.statusBadge.class}">${summary.statusBadge.label}</span>
+                </div>
+                <div class="text-[11px] text-zinc-400 mt-0.5">${summary.items.length} pieces • Top wear checked</div>
+              </div>
+              <span class="text-xs font-bold text-brand-600 dark:text-brand-400">Wear &rarr;</span>
+            </div>
+            <div class="flex items-start gap-2 overflow-x-auto no-scrollbar py-1">
+              ${piecesHtml}
+            </div>
+          `;
+
+          card.onclick = () => {
+            plannerSchedule[activePlanningDateKey] = {
+              outfitId: look.id,
+              outfitName: look.name,
+              itemIds: [...look.itemIds]
+            };
+            savePlannerStorage();
+            closeModal('modal-outfit-picker');
+            renderPlanner();
+          };
+
+          listContainer.appendChild(card);
+        });
+      }
+
+      openModal('modal-outfit-picker');
+      lucide.createIcons();
+    }
+
+    /**
+     * PLANNER WAY 2: Select a Clothing Item (Shirt, Pants, Quarter-zip, etc.)
+     * and show all outfits containing that item
+     * Sorted so most recently worn pieces (especially tops) are at the BOTTOM
+     */
+    async function proceedWithItemAnchorChoice() {
+      closeModal('modal-planner-choice');
+      currentAnchorCategory = 'All';
+      renderAnchorItemsGrid('All');
+      openModal('modal-item-anchor-picker');
+      lucide.createIcons();
+    }
+
+    function filterAnchorItems(category) {
+      currentAnchorCategory = category;
+      document.querySelectorAll('.anchor-cat-pill').forEach((pill) => {
+        const isCurrent = pill.innerText.toLowerCase().includes(category.toLowerCase()) || 
+                          (category === 'Quarterzips' && pill.innerText.includes('Quarter-zip'));
+        if (isCurrent) {
+          pill.className = "anchor-cat-pill active px-3 py-1 rounded-full bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 whitespace-nowrap";
+        } else {
+          pill.className = "anchor-cat-pill px-3 py-1 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 whitespace-nowrap";
+        }
+      });
+      renderAnchorItemsGrid(category);
+    }
+
+    async function renderAnchorItemsGrid(category) {
+      const grid = document.getElementById('anchor-items-grid');
+      grid.innerHTML = '';
+      const items = await db.getAll('clothing_items');
+
+      const filtered = category === 'All'
+        ? items
+        : items.filter(it => it.category.toLowerCase() === category.toLowerCase());
+
+      if (filtered.length === 0) {
+        grid.innerHTML = `<div class="col-span-3 py-10 text-center text-xs text-zinc-400">No pieces found in this category.</div>`;
+        return;
+      }
+
+      // SORTING: Weighted recency (Tops penalized heavier than pants)
+      const sorted = sortItemsByWearRecency(filtered);
+
+      sorted.forEach(item => {
+        const wearInfo = getWearBadgeData(item.id, item.category);
+        const thumb = document.createElement('div');
+        thumb.className = "aspect-square rounded-xl overflow-hidden bg-zinc-100 dark:bg-zinc-800 relative cursor-pointer border border-zinc-200 dark:border-zinc-700 active:scale-95 transition-transform group flex flex-col justify-between";
+        
+        thumb.innerHTML = `
+          <img src="${URL.createObjectURL(item.photoBlob)}" class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform" />
+          <div class="relative z-10 flex justify-between p-1">
+            <span class="text-[7px] bg-black/75 text-white font-bold px-1 rounded uppercase">${formatCategoryName(item.category).substring(0, 4)}</span>
+            <span class="text-[8px] px-1.5 py-0.5 rounded-full font-bold backdrop-blur-md shadow-sm ${wearInfo.badgeClass}">
+              ${wearInfo.shortLabel}
+            </span>
+          </div>
+          <div class="relative z-10 bg-gradient-to-t from-black/85 via-black/50 to-transparent p-1 pt-3 text-[10px] text-white truncate text-center font-medium">
+            ${item.name}
+          </div>
+        `;
+        thumb.onclick = () => selectItemToDisplayMatchingOutfits(item);
+        grid.appendChild(thumb);
+      });
+    }
+
+    async function selectItemToDisplayMatchingOutfits(item) {
+      closeModal('modal-item-anchor-picker');
+
+      const wearInfo = getWearBadgeData(item.id, item.category);
+
+      document.getElementById('selected-anchor-item-thumb').innerHTML = `<img src="${URL.createObjectURL(item.photoBlob)}" class="w-full h-full object-cover" />`;
+      document.getElementById('selected-anchor-item-title').innerText = `Outfits with ${item.name}`;
+      document.getElementById('selected-anchor-item-recency').innerText = `${formatCategoryName(item.category)}: ${wearInfo.label}`;
+
+      const outfits = await db.getAll('saved_outfits');
+      const allItems = await db.getAll('clothing_items');
+      const itemsMap = new Map(allItems.map(i => [i.id, i]));
+      const matchedOutfits = outfits.filter(o => o.itemIds && o.itemIds.includes(item.id));
+
+      const listContainer = document.getElementById('anchor-matched-outfits-list');
+      listContainer.innerHTML = '';
+
+      if (matchedOutfits.length === 0) {
+        listContainer.innerHTML = `
+          <div class="py-8 text-center space-y-3">
+            <p class="text-xs text-zinc-400">No saved outfits feature "${item.name}" yet.</p>
+            <div class="flex flex-col gap-2">
+              <button onclick="wearSingleItemOnly('${item.id}')" class="w-full py-2.5 px-3 rounded-xl bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 text-xs font-semibold">
+                Wear just this piece today
+              </button>
+              <button onclick="loadItemToCanvasAndMix('${item.id}', '${item.category}')" class="w-full py-2.5 px-3 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-xs font-semibold text-zinc-800 dark:text-zinc-200">
+                Mix an Outfit with this on Canvas &rarr;
+              </button>
+            </div>
+          </div>
+        `;
+      } else {
+        // Sort matched outfits by overall readiness
+        matchedOutfits.sort((a, b) => {
+          const sumA = calculateOutfitWearSummary(a, itemsMap).totalPenalty;
+          const sumB = calculateOutfitWearSummary(b, itemsMap).totalPenalty;
+          return sumA - sumB;
+        });
+
+        matchedOutfits.forEach(look => {
+          const summary = calculateOutfitWearSummary(look, itemsMap);
+          const card = document.createElement('div');
+          card.className = "p-3.5 bg-zinc-50 dark:bg-zinc-800/80 rounded-2xl border border-zinc-200/80 dark:border-zinc-700/80 space-y-2.5 cursor-pointer active:scale-[0.98] transition-transform hover:border-brand-500";
+
+          // Show every piece's wear recency badge
+          const piecesHtml = summary.items.map(it => {
+            const pWear = getWearBadgeData(it.id, it.category);
+            return `
+              <div class="flex flex-col items-center shrink-0 w-14">
+                <div class="w-14 h-16 rounded-lg overflow-hidden bg-zinc-200 dark:bg-zinc-700 shrink-0 border border-zinc-200/60 dark:border-zinc-600 relative">
+                  <img src="${URL.createObjectURL(it.photoBlob)}" class="w-full h-full object-cover" />
+                  <span class="absolute top-0 left-0 bg-black/75 text-white text-[7px] px-1 rounded-br uppercase font-bold">${formatCategoryName(it.category).substring(0, 4)}</span>
+                </div>
+                <span class="mt-1 text-[8px] px-1 py-0.5 rounded-full font-bold truncate max-w-full text-center ${pWear.badgeClass}">
+                  ${pWear.shortLabel}
+                </span>
+              </div>
+            `;
+          }).join('');
+
+          card.innerHTML = `
+            <div class="flex items-center justify-between">
+              <div>
+                <div class="flex items-center gap-2">
+                  <h4 class="font-bold text-sm text-zinc-900 dark:text-zinc-100">${look.name}</h4>
+                  <span class="text-[9px] px-2 py-0.5 rounded-full font-bold ${summary.statusBadge.class}">${summary.statusBadge.label}</span>
+                </div>
+                <p class="text-[11px] text-zinc-400 mt-0.5">${summary.items.length} pieces • Top & pants recency evaluated</p>
+              </div>
+              <span class="text-xs font-bold text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-950/50 px-2.5 py-1 rounded-lg">Select &rarr;</span>
+            </div>
+            <div class="flex items-start gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+              ${piecesHtml}
+            </div>
+          `;
+
+          card.onclick = () => {
+            plannerSchedule[activePlanningDateKey] = {
+              outfitId: look.id,
+              outfitName: look.name,
+              itemIds: [...look.itemIds]
+            };
+            savePlannerStorage();
+            closeModal('modal-anchor-outfits-results');
+            renderPlanner();
+          };
+
+          listContainer.appendChild(card);
+        });
+      }
+
+      openModal('modal-anchor-outfits-results');
+      lucide.createIcons();
+    }
+
+    function wearSingleItemOnly(itemId) {
+      plannerSchedule[activePlanningDateKey] = {
+        itemIds: [itemId]
+      };
+      savePlannerStorage();
+      closeModal('modal-anchor-outfits-results');
+      renderPlanner();
+    }
+
+    async function loadItemToCanvasAndMix(itemId, category) {
+      closeModal('modal-anchor-outfits-results');
+      const item = await db.get('clothing_items', itemId);
+      if (item) {
+        canvasSlots[category] = item;
+        updateCanvasUI();
+        switchTab('outfits');
+        setOutfitSubTab('canvas');
+      }
+    }
+
+    function promptWearOutfitOnSpecificDay(outfitId) {
+      const days = getRolling7Days();
+      const choice = prompt("Select day number:\n" + days.map((d, i) => `${i + 1}: ${d.dayName} (${d.formattedDate})`).join('\n'));
+      const idx = parseInt(choice, 10) - 1;
+      if (days[idx]) {
+        assignOutfitDirect(outfitId, days[idx].dateKey);
+        switchTab('planner');
+      }
+    }
+
+    async function assignOutfitDirect(outfitId, dateKey) {
+      const outfit = await db.get('saved_outfits', outfitId);
+      if (!outfit) return;
+      plannerSchedule[dateKey] = {
+        outfitId: outfit.id,
+        outfitName: outfit.name,
+        itemIds: [...outfit.itemIds]
+      };
+      savePlannerStorage();
+      renderPlanner();
+    }
+
+    /**
+     * GENERIC ITEM PICKER FOR MIXER SLOTS
+     */
+    async function openItemPickerModal(title, categoryFilter, onSelectCallback) {
+      document.getElementById('picker-title').innerText = title;
+      const grid = document.getElementById('picker-grid');
+      grid.innerHTML = '';
+
+      const items = await db.getAll('clothing_items');
+      const filtered = categoryFilter === 'All' 
+        ? items 
+        : items.filter(it => it.category.toLowerCase() === categoryFilter.toLowerCase());
+
+      if (filtered.length === 0) {
+        grid.innerHTML = `<div class="col-span-3 py-8 text-center text-xs text-zinc-400">No pieces found in this category.</div>`;
+      } else {
+        const sorted = sortItemsByWearRecency(filtered);
+
+        sorted.forEach(it => {
+          const wearInfo = getWearBadgeData(it.id, it.category);
+          const thumb = document.createElement('div');
+          thumb.className = "aspect-square rounded-xl overflow-hidden bg-zinc-100 dark:bg-zinc-800 relative cursor-pointer border border-zinc-200 dark:border-zinc-700 active:scale-95 transition-transform flex flex-col justify-between";
+          thumb.innerHTML = `
+            <img src="${URL.createObjectURL(it.photoBlob)}" class="absolute inset-0 w-full h-full object-cover" />
+            <div class="relative z-10 flex justify-between p-1">
+              <span class="text-[7px] bg-black/75 text-white font-bold px-1 rounded uppercase">${formatCategoryName(it.category).substring(0, 4)}</span>
+              <span class="text-[8px] px-1.5 py-0.5 rounded-full font-bold backdrop-blur-md shadow-sm ${wearInfo.badgeClass}">
+                ${wearInfo.shortLabel}
+              </span>
+            </div>
+            <div class="relative z-10 bg-black/65 backdrop-blur-xs p-1 text-[10px] text-white truncate text-center font-medium">
+              ${it.name}
+            </div>
+          `;
+          thumb.onclick = () => {
+            onSelectCallback(it);
+            closeModal('modal-item-picker');
+          };
+          grid.appendChild(thumb);
+        });
+      }
+
+      openModal('modal-item-picker');
+    }
+
+    /**
+     * MODAL HELPERS
+     */
+    function openModal(modalId) {
+      const modal = document.getElementById(modalId);
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeModal(modalId) {
+      const modal = document.getElementById(modalId);
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    function openAddItemModal() {
+      resetAddItemForm();
+      openModal('modal-add-item');
+      lucide.createIcons();
+    }
+
+    /**
+     * INITIALIZATION & SEED DATA
+     */
+    async function initApp() {
+      await openDatabase();
+      loadPlannerStorage();
+
+      const existing = await db.getAll('clothing_items');
+      if (existing.length === 0) {
+        await seedInitialWardrobe();
+      }
+
+      renderClosetGrid();
+      lucide.createIcons();
+    }
+
+    async function seedInitialWardrobe() {
+      function createPlaceholderBlob(color, text) {
+        const c = document.createElement('canvas');
+        c.width = 400;
+        c.height = 500;
+        const ctx = c.getContext('2d');
+        ctx.fillStyle = color;
+        ctx.fillRect(0, 0, 400, 500);
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 26px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(text, 200, 260);
+        return new Promise(res => c.toBlob(res, 'image/jpeg', 0.85));
+      }
+
+      const seedData = [
+        { name: "Navy Ribbed Quarter-Zip", cat: "Quarterzips", color: "#1e3a8a", tags: ["layer", "smart", "winter"] },
+        { name: "White Crisp Oxford Shirt", cat: "Tops", color: "#475569", tags: ["formal", "basic"] },
+        { name: "Grey Wool Trousers", cat: "Bottoms", color: "#334155", tags: ["work", "tailored"] },
+        { name: "Dark Denim Chore Jacket", cat: "Outerwear", color: "#1d4ed8", tags: ["outerwear", "casual"] },
+        { name: "White Leather Court Shoes", cat: "Shoes", color: "#0f172a", tags: ["clean", "sneakers"] }
+      ];
+
+      const insertedIds = [];
+      for (let i = 0; i < seedData.length; i++) {
+        const item = seedData[i];
+        const blob = await createPlaceholderBlob(item.color, item.name);
+        const id = 'seed_' + (i + 1);
+        await db.add('clothing_items', {
+          id,
+          name: item.name,
+          category: item.cat,
+          tags: item.tags,
+          photoBlob: blob,
+          createdAt: Date.now() - (seedData.length - i) * 60000
+        });
+        insertedIds.push(id);
+      }
+
+      // Seed Look 1: Smart Office Layering
+      await db.add('saved_outfits', {
+        id: 'outfit_seed_1',
+        name: 'Smart Office Layering',
+        tags: ['work', 'quarterzip'],
+        itemIds: [insertedIds[0], insertedIds[1], insertedIds[2], insertedIds[4]], // Quarter-zip, Shirt, Trousers, Shoes
+        createdAt: Date.now()
+      });
+
+      // Seed Look 2: Weekend Casual Layer
+      await db.add('saved_outfits', {
+        id: 'outfit_seed_2',
+        name: 'Weekend Casual Layer',
+        tags: ['casual'],
+        itemIds: [insertedIds[0], insertedIds[3], insertedIds[2]], // Quarter-zip, Jacket, Trousers
+        createdAt: Date.now()
+      });
+
+      // Assign the first look to yesterday to demonstrate top vs pants wear weighting
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yDateKey = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, '0')}-${String(yesterday.getDate()).padStart(2, '0')}`;
+      plannerSchedule[yDateKey] = {
+        outfitId: 'outfit_seed_1',
+        outfitName: 'Smart Office Layering',
+        itemIds: [insertedIds[0], insertedIds[1], insertedIds[2], insertedIds[4]]
+      };
+      savePlannerStorage();
+    }
+
+    window.addEventListener('DOMContentLoaded', initApp);
+  </script>
+</body>
+</html>
